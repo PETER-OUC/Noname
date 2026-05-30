@@ -15,7 +15,7 @@ from pathlib import Path
 # ==================== 参数配置区域 ====================
 
 # ---- 真实海试录音路径（原始含脉冲的未降噪文件） ----
-real_wav_path = r'G:\\Files\\HW\\第三阶段\\github\\mobileNet_v3\\data\\pulse_test_3_手表116_level_2_40.wav'
+real_wav_path = r'G:\\Files\\HW\\第三阶段\\github\\mobileNet_v3\\pulse_test_3_手表116_level_2_40.wav'
 
 # ---- 真实录音分析时段（秒） ----
 analysis_start_sec = 0
