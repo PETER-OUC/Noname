@@ -391,6 +391,13 @@ def train():
     else:
         print(f"Warning: {dataprocess_source} not found in current directory")
 
+    dataprocess_source = "dataprocess_maker.py"
+    if os.path.exists(dataprocess_source):
+        dataprocess_dest = os.path.join(output_dir, "dataprocess_maker.py")
+        shutil.copy2(dataprocess_source, dataprocess_dest)
+        print(f"Copied {dataprocess_source} to output directory")
+    else:
+        print(f"Warning: {dataprocess_source} not found in current directory")
     # 保存训练信息
     training_info_path = os.path.join(output_dir, "training_info.txt")
     with open(training_info_path, "w", encoding="utf-8") as f:
@@ -432,7 +439,7 @@ def train():
     # ----------------------
     # 训练配置
     # ----------------------
-    lr, num_epochs, batch_size = 0.005, 100, 2048
+    lr, num_epochs, batch_size = 0.005, 200, 2048
 
     if test_data is None:
         print("错误：未找到测试数据，无法训练")
@@ -806,7 +813,15 @@ def find_output_directories():
     return output_dirs
 
 
-def select_output_directory():
+def select_output_directory(cmd_dir=None):
+    """如果命令行传了目录，直接用；否则 fallback 到 tk/手动/自动发现"""
+    if cmd_dir:
+        if os.path.isdir(cmd_dir):
+            print(f"\n✓ 使用命令行指定的目录: {cmd_dir}")
+            return [cmd_dir]
+        else:
+            print(f"\n! 指定目录不存在: {cmd_dir}")
+
     selected_dir = None
     try:
         import tkinter as tk
@@ -1152,7 +1167,7 @@ def process_single_model(model_path, model_name, epoch, wav_files, output_base_d
     return results_summary
 
 
-def predict():
+def predict(model_dir=None):
     import matplotlib.pyplot as plt
     plt.rcParams['font.sans-serif'] = ['SimHei']
     plt.rcParams['axes.unicode_minus'] = False
@@ -1165,7 +1180,7 @@ def predict():
     print("步骤1: 选择模型输出目录")
     print("=" * 70)
     
-    output_directories = select_output_directory()
+    output_directories = select_output_directory(cmd_dir=model_dir)
     if output_directories is None:
         print("正在自动发现输出目录...")
         output_directories = find_output_directories()
@@ -1273,11 +1288,13 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='MobileNet v3 统一入口')
     parser.add_argument('--mode', type=str, default='train', choices=['train', 'predict'],
                         help='运行模式: train / predict (默认: train)')
+    parser.add_argument('--dir', type=str, default=None,
+                    help='predict模式：直接指定模型输出目录，跳过手动选择')
     args = parser.parse_args()
 
     if args.mode == 'train':
         train()
     elif args.mode == 'predict':
-        predict()
+        predict(model_dir=args.dir)
     else:
         parser.print_help()
