@@ -1,8 +1,65 @@
 # 项目文件说明文档
 
-- **生成时间**: 2026-05-30
+- **生成时间**: 2026-06-01
 - **项目路径**: `G:\Files\HW\第三阶段\github\mobileNet_v3`
 - **说明**: 本文档详细说明了本项目内各个文件的作用及使用方法。
+
+---
+
+## dataprocess_maker.py
+
+### 文件说明
+
+统一数据预处理脚本（可独立运行的 `.py` 版本），功能与 `dataprocess_unified.ipynb` 等效，但无需 Jupyter 环境即可直接执行。
+
+主要功能包括：
+- 批量读取指定文件夹下的 `.wav` 音频文件并执行 STFT（短时傅里叶变换）
+- 自动重采样到 48kHz 统一采样率
+- 支持列归一化（column）和全局归一化（global）两种方式
+- 支持 SEND 处理（频响曲线叠加）、低频屏蔽（0:40行置为接近0）
+- 支持数据增强：基于 `group_d_send` 的频响变换 + 高斯噪声叠加（多 SNR 循环）
+- 支持数据集平衡（按比例删减特定标签样本）
+- 支持标签合并（如将多个类别合并为一个）
+- 输出 `X_train_*.npy`、`X_test_*.npy`、`X_val_*.npy` 及对应的 `y_*.npy`
+
+### 配置参数（在脚本顶部修改）
+
+| 参数 | 说明 | 典型值 |
+|------|------|--------|
+| `folder_path_list` | 音频文件夹路径列表（按标签顺序） | 列表 of 字符串 |
+| `Sample_time_len` | 单个样本时长（秒） | `2` |
+| `window_length_s` | STFT 窗长（秒） | `0.02` |
+| `overlap_ratio_frame` | 样本重叠比例 | `0.5` |
+| `frequency_choose_low` / `frequency_choose_high` | 关注频率范围（Hz） | `3e3` / `13e3` |
+| `NORMALIZATION_TYPE` | 归一化方式 | `'global'` 或 `'column'` |
+| `USE_SEND` | 是否使用 SEND 处理 | `True` / `False` |
+| `USE_5K` | 是否启用 5K 样本扩增模式 | `True` / `False` |
+| `INCLUDE_ORIGINAL` | 是否保留原始数据（无增强） | `True` / `False` |
+| `MASK_LOW_FREQ` | 是否屏蔽低频区域 | `True` / `False` |
+| `MERGE_LABELS` | 标签合并配置 | `{0: [1]}` 或 `None` |
+| `BALANCE_DATASET` | 是否进行数据集平衡 | `True` / `False` |
+| `BALANCE_REMOVE_RATIO` | 各标签删除比例 | `{0: 0.2}` |
+| `OUTPUT_SUFFIX` | 输出文件名后缀 | `None`（自动根据配置生成） |
+
+### 使用方法
+
+```bash
+python dataprocess_maker.py
+```
+
+1. 打开 `dataprocess_maker.py`，在顶部**参数配置区域**修改 `folder_path_list` 和其他参数
+2. 直接运行脚本
+3. 生成的 `.npy` 文件保存在当前目录，命名格式：`X_train_{Sample_time_len}_{OUTPUT_SUFFIX}.npy`
+
+### 主要函数
+
+- `normalize_columns_to_255_vectorized(X)`: 列归一化到 [0, 255]
+- `normalize_global_to_255(X)`: 全局归一化到 [0, 255]
+- `add_impulse_noise(...)`: 时域脉冲噪声注入（模拟机械冲击）
+- `smooth_gp_noise(...)`: 高斯过程平滑扰动（用于频响曲线）
+- `process_batch(...)`: 批量数据增强（带噪声版本）
+- `process_original_batch(...)`: 批量处理原始数据（无噪声版本）
+- `balance_dataset(X, y, remove_ratio)`: 按比例删减特定类别样本以平衡数据集
 
 ---
 
@@ -10,7 +67,7 @@
 
 ### 文件说明
 
-统一数据预处理 Notebook，用于将原始音频数据（WAV）转换为模型训练所需的时频图 `.npy` 格式。
+统一数据预处理 Notebook，用于将原始音频数据（WAV）转换为模型训练所需的时频图 `.npy` 格式。与 `dataprocess_maker.py` 功能等效，但以交互式 Notebook 形式呈现，适合调试和可视化。
 
 主要功能包括：
 - 读取 `.wav` 音频文件并执行 STFT（短时傅里叶变换）
@@ -81,12 +138,17 @@ MobileNet v3 统一入口脚本，合并了原 `mobile_net_train_v3.py`（训练
 ### 命令行参数
 
 ```bash
-python main.py --mode train      # 训练模式（默认）
-python main.py --mode predict    # 批量预测模式
+python main.py --mode train                      # 训练模式（默认）
+python main.py --mode predict                     # 批量预测模式（弹窗选择目录）
+python main.py --mode predict --dir <模型目录>     # 直接指定模型目录，跳过弹窗
+eg: 
+python main.py --mode predict --dir G:\Files\HW\第三阶段\github\mobileNet_v3\mobile_net__v3_20260601_152520
 ```
+
 
 参数说明：
 - `--mode`: 运行模式，可选 `train` 或 `predict`，默认为 `train`
+- `--dir`: **仅 predict 模式有效**，直接指定模型输出目录路径，跳过 tkinter 手动选择对话框
 
 ### 主要函数
 
@@ -95,7 +157,7 @@ python main.py --mode predict    # 批量预测模式
 - `evaluate_accuracy_gpu(net, data_iter, device)`: 在 GPU 上评估模型准确率
 - `build_mobilenet_from_config(config)`: 根据配置字典构建 MobileNet 网络
 - `train()`: 训练主函数，包含数据加载、断点续训、训练循环、模型保存、ONNX 导出、验证集评估、自动预测等完整流程
-- `predict()`: 批量预测主函数，支持目录选择/自动发现、多模型批量处理、结果汇总
+- `predict(model_dir=None)`: 批量预测主函数。`model_dir` 为 `None` 时弹窗/自动发现目录；传入路径时直接处理该目录
 - `process_single_model(...)`: 对单个 `.pth` 模型执行预测、后处理、混淆矩阵生成和 CSV 保存
 
 ### 使用方法
@@ -118,18 +180,21 @@ python main.py --mode train
 
 #### 批量预测
 
-确保当前目录下有训练输出的模型目录（内含 `.pth` 文件）和 `.wav` 测试文件：
+确保当前目录下有 `.wav` 测试文件，且模型目录在当前目录下（或指定 `--dir`）：
 
 ```bash
+# 方式1：弹窗选择模型目录
 python main.py --mode predict
+
+# 方式2：命令行直接指定模型目录（适合自动化/无GUI环境）
+python main.py --mode predict --dir mobile_net_xxx_20260530_224724
 ```
 
 执行后会：
-1. 弹出目录选择框让用户选择模型输出目录（或自动发现）
-2. 自动发现目录下的所有 `.pth` 模型（排除 `_int8.pth`）
-3. 对每个模型和每个 `.wav` 文件执行预测
-4. 生成混淆矩阵图（`{wav_name}_best_acc.png` 或 `{wav_name}_epoch{N}_acc.png`）
-5. 生成 `confusion_matrix_{model_name}.csv` 和 `all_models_summary.csv`
+1. 发现目录下的所有 `.pth` 模型（排除 `_int8.pth`）
+2. 对每个模型和每个 `.wav` 文件执行预测
+3. 生成混淆矩阵图（`{wav_name}_best_acc.png` 或 `{wav_name}_epoch{N}_acc.png`）
+4. 生成 `confusion_matrix_{model_name}.csv` 和 `all_models_summary.csv`
 
 ### 网络结构配置
 
