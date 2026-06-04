@@ -1,0 +1,62 @@
+{
+    "learning_rate": 0.005,
+    "num_epochs": 200,
+    "batch_size": 2048,
+    "best_accuracy": 0.9783165704233432,
+    "training_time_seconds": 2473.340889453888,
+    "training_start_time": "20260604_153024",
+    "training_end_time": "20260604_161138",
+    "input_shape": [
+        1,
+        213,
+        100
+    ],
+    "num_classes": 4,
+    "train_samples": 152367,
+    "test_samples": 52298,
+    "val_samples": 12935,
+    "network_architecture": "MobileNet_Tiny",
+    "total_parameters": 5156,
+    "model_size_kb": 20.140625,
+    "quantized_size_kb": 5.03515625,
+    "optimizer": "SGD",
+    "loss_function": "CrossEntropyLoss",
+    "file_name": "mobile_net__v4",
+    "output_directory": "G:\\Files\\HW\\第三阶段\\github\\mobileNet_v4\\mobile_net__v4_20260604_153024",
+    "network_config": {
+        "input_channels": 1,
+        "num_classes": 4,
+        "dropout_rate": 0.2,
+        "stem": {
+            "out_channels": 16,
+            "kernel_size": 3,
+            "stride": 2,
+            "padding": 1
+        },
+        "stem_pool": {
+            "kernel_size": 2,
+            "stride": 2,
+            "padding": 0
+        },
+        "blocks": [
+            {
+                "in_channels": 16,
+                "out_channels": 32,
+                "stride": 2
+            },
+            {
+                "in_channels": 32,
+                "out_channels": 32,
+                "stride": 1
+            },
+            {
+                "in_channels": 32,
+                "out_channels": 64,
+                "stride": 2
+            }
+        ],
+        "classifier": {
+            "in_features": 64
+        }
+    }
+}

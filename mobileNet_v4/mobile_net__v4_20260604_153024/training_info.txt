@@ -1,0 +1,4 @@
+Training Start Time: 20260604_153024
+File Name: mobile_net__v4
+Output Directory: G:\Files\HW\第三阶段\github\mobileNet_v4\mobile_net__v4_20260604_153024
+Current Working Directory: G:\Files\HW\第三阶段\github\mobileNet_v4
